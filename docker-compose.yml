@@ -1,0 +1,85 @@
+# NInfer-4090 服务编排
+# 用法:
+#   docker compose up -d --build   # 首次: 构建镜像(ninfer-4090 子模块)并启动
+#   docker compose up -d          # 之后: 直接启动
+#   docker compose logs -f        # 查看日志
+#   docker compose down           # 停止并移除容器
+services:
+  ninfer:
+    # 优先使用已构建好的镜像; 未构建时可用 build 段现场构建
+    image: ninfer-4090:sm89
+    build:
+      # 引擎源码在 git 子模块 ninfer-4090 中, Dockerfile 也在那里
+      # 该 fork 已把 CMAKE_CUDA_ARCHITECTURES 默认设为 89 (RTX 4090), 无需额外参数
+      context: ./ninfer-4090
+    # 固定容器名, 方便排查
+    container_name: ninfer-4090
+    # 服务停止后自动重启; Ctrl-C 手动停止则不重启
+    restart: unless-stopped
+    # 暴露 8080 端口, 客户端访问 http://127.0.0.1:8080/v1
+    ports:
+      - "8080:8080"
+    # GPU: 请求全部可见 GPU (容器内只用一张 4090)
+    # 需要宿主机已安装 NVIDIA Container Toolkit
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    # 把本地 models 目录以只读方式挂载进容器
+    # 容器内路径固定为 /workspace/models
+    volumes:
+      - ./models:/workspace/models:ro
+    # 容器工作目录, 与镜像内可执行文件位置一致
+    working_dir: /workspace
+    # 启动命令: 逐个参数解释如下
+    entrypoint: ["ninfer-serve"]
+    command:
+      # 要加载的模型文件 (位于 /workspace/models, 即本地 ./models 目录)
+      # 你的文件是 qwen3_8_27b_3526913004b1.ninfer
+      - models/qwen3_8_27b_3526913004b1.ninfer
+      # 监听地址: 0.0.0.0 表示监听所有网卡 (必须, 否则容器外无法访问)
+      - --host
+      - "0.0.0.0"
+      # 容器内服务端口, 与上方 ports 映射的右侧端口对应
+      - --port
+      - "8080"
+      # 单请求最大上下文长度 (262144 = 256K, 模型原生上限)
+      - --max-context
+      - "262144"
+      # KV 缓存容量上限 (token 数), 决定缓存池能容纳多长的会话
+      - --kv-capacity
+      - "262144"
+      # 并发生成槽位数: 1 = 同一时间只处理一个生成请求
+      # 4090 上 2 槽有实测收益 (约 1.5x 吞吐, 每槽多耗约 390 MiB), 可按需改为 2
+      - --max-concurrency
+      - "1"
+      # 准入队列最大等待请求数: 超出槽位的请求排队, 最多排 16 个
+      - --max-pending-requests
+      - "16"
+      # 排队超时 (毫秒): 600000 = 10 分钟, 给深度冷 prefill 留出足够时间
+      - --pending-timeout-ms
+      - "600000"
+      # prefill 分块大小 (token): 1024, 控制预填充阶段的显存与精度平衡
+      # 文档建议不要超过 2688
+      - --prefill-chunk
+      - "1024"
+      # KV 缓存量化模式: rk4v4-e8 = E8 格子的 4-bit KV,
+      # 能在 24GB 上放下完整 262K 上下文且检索保持精确
+      # (其他选项: int8 精度最高但只有 ~168K; rk2v4-e8 更省显存)
+      - --kv-dtype
+      - "rk4v4-e8"
+      # 推测解码方式: mtp = 多 token 预测 (speculative decoding), 显著提升解码速度
+      - --spec
+      - "mtp"
+      # MTP 每步草稿 token 数: 3 (draft 接受率越高收益越大)
+      - --draft-tokens
+      - "3"
+      # 草稿 token 的 logits 直接复用主模型 lm-head, 省一份 draft lm-head 显存
+      - --lm-head-draft
+      # 开启视觉 (图像/图表) 处理能力
+      - --vision
+      # 保留模型的思维链 (thinking) 内容, reasoning_content 随响应返回
+      - --preserve-thinking

@@ -1,0 +1,3 @@
+[submodule "ninfer-4090"]
+	path = ninfer-4090
+	url = https://github.com/sergiuszm/ninfer-4090.git

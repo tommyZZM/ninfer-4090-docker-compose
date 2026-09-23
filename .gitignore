@@ -1,0 +1,104 @@
+# ---- Build (C++ / CMake) ----
+build/
+build-*/
+cmake-build-*/
+out/
+dist/
+third_party/build/
+vcpkg_installed/
+*.o
+*.obj
+*.so
+*.a
+*.exe
+*.dll
+*.lib
+*.exp
+compile_commands.json
+CMakeUserPresets.json
+.cache/
+
+# ---- CUDA / profiling artifacts ----
+*.nsys-rep
+*.ncu-rep
+*.qdrep
+*.sqlite
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.virtualenv/
+
+# ---- Jupyter ----
+.ipynb_checkpoints/
+profile_default/
+*.ipynb
+
+# ---- Model weights / large binaries ----
+*.ninfer
+*.safetensors
+*.gguf
+*.ggml
+*.bin
+*.pt
+*.pth
+*.onnx
+*.ckpt
+models/
+
+# ---- Datasets ----
+datasets/
+data/
+*.parquet
+*.arrow
+
+# ---- Logs & temp ----
+*.log
+logs/
+*.tmp
+*.temp
+.cache/
+.tmp/
+
+# ---- IDE / editors ----
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ---- Env / secrets ----
+.env
+.env.*
+*.pem
+*.key
+
+# ---- Docker volumes (local runtime data) ----
+volumes/
+docker-data/
