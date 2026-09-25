@@ -16,9 +16,9 @@ services:
     container_name: ninfer-4090
     # 服务停止后自动重启; Ctrl-C 手动停止则不重启
     restart: unless-stopped
-    # 暴露 8080 端口, 客户端访问 http://127.0.0.1:8080/v1
+    # 暴露 11439 端口, 客户端访问 http://127.0.0.1:11439/v1
     ports:
-      - "8080:8080"
+      - "11439:8080"
     # GPU: 请求全部可见 GPU (容器内只用一张 4090)
     # 需要宿主机已安装 NVIDIA Container Toolkit
     deploy:
@@ -36,6 +36,16 @@ services:
     working_dir: /workspace
     # 启动命令: 逐个参数解释如下
     entrypoint: ["ninfer-serve"]
+    # 对应 --gpus all
+    gpus: all
+    # 对应 --ulimit memlock=-1 --ulimit stack=67108864
+    ulimits:
+      memlock:
+        soft: 67108864
+        hard: 67108864
+      stack:
+        soft: 67108864
+        hard: 67108864
     command:
       # 要加载的模型文件 (位于 /workspace/models, 即本地 ./models 目录)
       # 你的文件是 qwen3_8_27b_3526913004b1.ninfer
@@ -48,10 +58,12 @@ services:
       - "8080"
       # 单请求最大上下文长度 (262144 = 256K, 模型原生上限)
       - --max-context
-      - "262144"
+      # - "262144"
+      - "229376"
       # KV 缓存容量上限 (token 数), 决定缓存池能容纳多长的会话
       - --kv-capacity
-      - "262144"
+      # - "262144"
+      - "229376"
       # 并发生成槽位数: 1 = 同一时间只处理一个生成请求
       # 4090 上 2 槽有实测收益 (约 1.5x 吞吐, 每槽多耗约 390 MiB), 可按需改为 2
       - --max-concurrency
@@ -83,3 +95,9 @@ services:
       - --vision
       # 保留模型的思维链 (thinking) 内容, reasoning_content 随响应返回
       - --preserve-thinking
+      # 主机状态槽位数
+      - --host-state-slots
+      - "1"
+      # 主机 KV 缓存大小 (MiB)
+      - --host-kv-mib
+      - "768"

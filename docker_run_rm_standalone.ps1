@@ -1,0 +1,15 @@
+docker run --rm --gpus all --publish 8080:8080 `
+  --memory="24g" `
+  --ulimit memlock=2147483648:2147483648 `
+  --volume "$($PWD.Path)/models:/workspace/models:ro" `
+  ninfer-4090:sm89 `
+  ninfer-serve models/qwen3_8_27b_3526913004b1.ninfer `
+  --host 0.0.0.0 --port 8080 `
+  --max-context 262144 --kv-capacity 262144 `
+  --max-concurrency 1 --max-pending-requests 4 `
+  --pending-timeout-ms 600000 `
+  --prefill-chunk 1024 --kv-dtype rk4v4-e8 `
+  --spec mtp --draft-tokens 3 --lm-head-draft `
+  --host-state-slots 1 `
+  --host-kv-mib 768 `
+  --vision --preserve-thinking
