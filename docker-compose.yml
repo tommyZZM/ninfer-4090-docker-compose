@@ -4,6 +4,12 @@
 #   docker compose up -d          # 之后: 直接启动
 #   docker compose logs -f        # 查看日志
 #   docker compose down           # 停止并移除容器
+#   .\restart_docker_compose.ps1  # 交互式选择模型并启动/重启 (Windows PowerShell)
+#   ./restart_docker_compose.sh   # 交互式选择模型并启动/重启 (Linux/macOS/WSL)
+#
+# 模型可通过环境变量 MODEL_FILE 覆盖 (容器内相对路径), 例如:
+#   $env:MODEL_FILE = "models/xxx.ninfer"; docker compose up -d   # PowerShell
+#   MODEL_FILE="models/xxx.ninfer" docker compose up -d           # bash
 services:
   ninfer:
     # 优先使用已构建好的镜像; 未构建时可用 build 段现场构建
@@ -48,8 +54,9 @@ services:
         hard: 67108864
     command:
       # 要加载的模型文件 (位于 /workspace/models, 即本地 ./models 目录)
-      # 你的文件是 qwen3_8_27b_3526913004b1.ninfer
-      - models/qwen3_8_27b_3526913004b1.ninfer
+      # 由环境变量 MODEL_FILE 指定 (容器内相对路径, 如 models/xxx.ninfer)
+      # 未设置时回退到默认模型
+      - ${MODEL_FILE:-models/qwen3_8_27b_3526913004b1.ninfer}
       # 监听地址: 0.0.0.0 表示监听所有网卡 (必须, 否则容器外无法访问)
       - --host
       - "0.0.0.0"
@@ -59,11 +66,11 @@ services:
       # 单请求最大上下文长度 (262144 = 256K, 模型原生上限)
       - --max-context
       # - "262144"
-      - "229376"
+      - "262144"
       # KV 缓存容量上限 (token 数), 决定缓存池能容纳多长的会话
       - --kv-capacity
       # - "262144"
-      - "229376"
+      - "262144"
       # 并发生成槽位数: 1 = 同一时间只处理一个生成请求
       # 4090 上 2 槽有实测收益 (约 1.5x 吞吐, 每槽多耗约 390 MiB), 可按需改为 2
       - --max-concurrency
