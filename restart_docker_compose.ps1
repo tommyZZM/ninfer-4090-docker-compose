@@ -63,6 +63,27 @@ if (-not (Test-Path (Join-Path $modelsDir $candidate))) {
 $env:MODEL_FILE = "models/$candidate"
 Write-Host "已选择模型: $($env:MODEL_FILE)" -ForegroundColor Green
 
+# ---------- 记录最新选择到 .modelfile-picked ----------
+$pickedFile = Join-Path $PSScriptRoot ".modelfile-picked"
+$pickedContent = @(
+    "# 由 restart_docker_compose.ps1 自动生成, 记录最近一次选择的模型"
+    "MODEL_FILE=$($env:MODEL_FILE)"
+    "MODEL_NAME=$candidate"
+    "TIMESTAMP=$((Get-Date).ToString('yyyy-MM-dd HH:mm:ss'))"
+    "COMPOSE_ARGS=docker $($composeArgs -join ' ')"
+)
+if ($DryRun) {
+    Write-Host "[dryrun] 跳过写入选择记录: $pickedFile" -ForegroundColor Yellow
+} else {
+    try {
+        Set-Content -Path $pickedFile -Value $pickedContent -Encoding UTF8
+        Write-Host "已写入选择记录: $pickedFile" -ForegroundColor DarkGray
+    }
+    catch {
+        Write-Warning "无法写入 $pickedFile : $_"
+    }
+}
+
 # ---------- 启动 docker compose ----------
 Push-Location $PSScriptRoot
 try {

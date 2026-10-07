@@ -84,6 +84,7 @@ logs/
 *.temp
 .cache/
 .tmp/
+.modelfile-picked
 
 # ---- IDE / editors ----
 .vscode/

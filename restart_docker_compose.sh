@@ -68,6 +68,22 @@ MODEL_FILE="${MODEL_FILE#models/}"; MODEL_FILE="${MODEL_FILE#./}"
 export MODEL_FILE="models/$MODEL_FILE"
 echo "已选择模型: $MODEL_FILE"
 
+# ---------- 记录最新选择到 .modelfile-picked ----------
+PICKED_FILE="$ROOT/.modelfile-picked"
+if [[ "$DRYRUN" -eq 1 ]]; then
+    echo "[dryrun] 跳过写入选择记录: $PICKED_FILE"
+elif {
+    echo "# 由 restart_docker_compose.sh 自动生成, 记录最近一次选择的模型"
+    echo "MODEL_FILE=$MODEL_FILE"
+    echo "MODEL_NAME=${MODEL_FILE#models/}"
+    echo "TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')"
+    echo "COMPOSE_ARGS=docker ${ARGS[*]}"
+} > "$PICKED_FILE" 2>/dev/null; then
+    echo "已写入选择记录: $PICKED_FILE"
+else
+    echo "警告: 无法写入 $PICKED_FILE" >&2
+fi
+
 # ---------- 启动 docker compose ----------
 cd "$ROOT"
 echo "执行: docker ${ARGS[*]}"
